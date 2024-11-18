@@ -14,17 +14,18 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import track, Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
-
+from src.models.lstm import PyTorchLSTMClassifier
 console = Console()
 
-def get_models():
+def get_models(input_shape=None):
     models = {
         'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
         'Gradient Boosting': GradientBoostingClassifier(random_state=42),
         'SVM': SVC(probability=True, random_state=42),
-        'KNN': KNeighborsClassifier(n_neighbors=5),
-        'Neural Network': MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=42),
-        'XGBoost': XGBClassifier(random_state=42)
+        'KNN': KNeighborsClassifier(),
+        'Neural Network': MLPClassifier(random_state=42),
+        'XGBoost': XGBClassifier(random_state=42),
+        'LSTM': PyTorchLSTMClassifier(input_shape=input_shape)
     }
     return models
 

@@ -10,17 +10,21 @@ from rich.live import Live
 from rich.layout import Layout
 from rich.style import Style
 from .model_evaluation import get_models, evaluate_model, plot_model_comparison, plot_metrics_heatmap
+import torch
 
 console = Console()
 
 class SequenceClassifier:
-    def __init__(self, random_seed=42):
+    def __init__(self, input_shape=None, random_seed=42):
         self.random_seed = random_seed
         # Set seeds for all relevant libraries
         np.random.seed(self.random_seed)
         random.seed(self.random_seed)
+        torch.manual_seed(self.random_seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(self.random_seed)
         
-        self.models = get_models()
+        self.models = get_models(input_shape)
         self.results = {}
         
     def train_and_evaluate(self, X, y, test_size=0.2):

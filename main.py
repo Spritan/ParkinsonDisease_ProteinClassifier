@@ -54,7 +54,7 @@ def main():
         console.print(f"\n[bold green]Selected {len(selected_features)} features for model training[/bold green]")
         
         status.update("[bold green]Training and evaluating models...")
-        classifier = SequenceClassifier()
+        classifier = SequenceClassifier(input_shape=X_selected.shape)
         results = classifier.train_and_evaluate(X_selected, y)
 
     # Print results using rich formatting
