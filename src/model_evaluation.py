@@ -8,6 +8,12 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
+from rich.console import Console
+from rich.table import Table
+from rich.progress import track, Progress, SpinnerColumn, TextColumn
+from rich.panel import Panel
+
+console = Console()
 
 def get_models():
     models = {
@@ -29,58 +35,89 @@ def evaluate_model(model, X, y, n_splits=5):
         'f1': []
     }
     
-    for train_idx, val_idx in kf.split(X):
-        X_train, X_val = X[train_idx], X[val_idx]
-        y_train, y_val = y[train_idx], y[val_idx]
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        task = progress.add_task("[cyan]Running cross-validation...", total=n_splits)
         
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_val)
-        
-        scores['accuracy'].append(accuracy_score(y_val, y_pred))
-        scores['precision'].append(precision_score(y_val, y_pred))
-        scores['recall'].append(recall_score(y_val, y_pred))
-        scores['f1'].append(f1_score(y_val, y_pred))
+        for train_idx, val_idx in kf.split(X):
+            X_train, X_val = X[train_idx], X[val_idx]
+            y_train, y_val = y[train_idx], y[val_idx]
+            
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_val)
+            
+            scores['accuracy'].append(accuracy_score(y_val, y_pred))
+            scores['precision'].append(precision_score(y_val, y_pred))
+            scores['recall'].append(recall_score(y_val, y_pred))
+            scores['f1'].append(f1_score(y_val, y_pred))
+            
+            progress.advance(task)
     
     return {metric: (np.mean(values), np.std(values)) 
             for metric, values in scores.items()}
 
 def plot_model_comparison(results, metric='accuracy'):
-    plt.figure(figsize=(12, 6))
-    models = list(results.keys())
-    means = [results[model][metric][0] for model in models]
-    stds = [results[model][metric][1] for model in models]
-    
-    # Create bar plot manually instead of using seaborn
-    x = np.arange(len(models))
-    plt.bar(x, means, yerr=stds, capsize=5)
-    plt.xticks(x, models, rotation=45)
-    plt.ylabel(metric.capitalize())
-    plt.title(f'Model Comparison - {metric.capitalize()}')
-    
-    # Add value labels on top of bars
-    for i, v in enumerate(means):
-        plt.text(i, v + stds[i], f'{v:.3f}', ha='center', va='bottom')
-    
-    plt.tight_layout()
-    plt.savefig(f'plots/model_comparison_{metric}.png')
-    plt.close()
+    with console.status(f"[cyan]Generating {metric} comparison plot..."):
+        plt.figure(figsize=(12, 6))
+        models = list(results.keys())
+        means = [results[model][metric][0] for model in models]
+        stds = [results[model][metric][1] for model in models]
+        
+        x = np.arange(len(models))
+        plt.bar(x, means, yerr=stds, capsize=5)
+        plt.xticks(x, models, rotation=45)
+        plt.ylabel(metric.capitalize())
+        plt.title(f'Model Comparison - {metric.capitalize()}')
+        
+        for i, v in enumerate(means):
+            plt.text(i, v + stds[i], f'{v:.3f}', ha='center', va='bottom')
+        
+        plt.tight_layout()
+        plt.savefig(f'plots/model_comparison_{metric}.png')
+        plt.close()
+        
+    console.print(f"[green]✓[/green] Saved comparison plot for {metric}")
 
 def plot_metrics_heatmap(results):
-    metrics = ['accuracy', 'precision', 'recall', 'f1']
-    models = list(results.keys())
+    with console.status("[cyan]Generating metrics heatmap..."):
+        metrics = ['accuracy', 'precision', 'recall', 'f1']
+        models = list(results.keys())
+        
+        data = np.zeros((len(models), len(metrics)))
+        for i, model in enumerate(models):
+            for j, metric in enumerate(metrics):
+                data[i, j] = results[model][metric][0]
+        
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(data, annot=True, fmt='.3f', 
+                    xticklabels=metrics, 
+                    yticklabels=models,
+                    cmap='YlOrRd')
+        plt.title('Model Performance Metrics')
+        plt.tight_layout()
+        plt.savefig('plots/metrics_heatmap.png')
+        plt.close()
+        
+    console.print("[green]✓[/green] Saved metrics heatmap")
+
+def display_model_results(results):
+    table = Table(title="Model Performance Summary", show_header=True, header_style="bold magenta")
+    table.add_column("Model", style="cyan")
+    table.add_column("Accuracy", justify="right", style="green")
+    table.add_column("Precision", justify="right", style="green")
+    table.add_column("Recall", justify="right", style="green")
+    table.add_column("F1 Score", justify="right", style="green")
     
-    # Create data matrix for heatmap
-    data = np.zeros((len(models), len(metrics)))
-    for i, model in enumerate(models):
-        for j, metric in enumerate(metrics):
-            data[i, j] = results[model][metric][0]
+    for model_name, metrics in results.items():
+        table.add_row(
+            model_name,
+            f"{metrics['accuracy'][0]:.3f} ± {metrics['accuracy'][1]:.3f}",
+            f"{metrics['precision'][0]:.3f} ± {metrics['precision'][1]:.3f}",
+            f"{metrics['recall'][0]:.3f} ± {metrics['recall'][1]:.3f}",
+            f"{metrics['f1'][0]:.3f} ± {metrics['f1'][1]:.3f}"
+        )
     
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(data, annot=True, fmt='.3f', 
-                xticklabels=metrics, 
-                yticklabels=models,
-                cmap='YlOrRd')
-    plt.title('Model Performance Metrics')
-    plt.tight_layout()
-    plt.savefig('plots/metrics_heatmap.png')
-    plt.close() 
+    console.print(table) 
