@@ -51,11 +51,11 @@ class SequenceDataAnalyzer:
         
         # ANOVA F-value
         f_scores = SelectKBest(score_func=f_classif, k='all').fit(self.X, self.y)
-        f_importance = pd.Series(f_scores.scores_, index=self.feature_names)
+        f_importance = pd.Series(f_scores.scores_, index=self.feature_names) # type: ignore
         
         # Mutual Information
         mi_scores = SelectKBest(score_func=mutual_info_classif, k='all').fit(self.X, self.y)
-        mi_importance = pd.Series(mi_scores.scores_, index=self.feature_names)
+        mi_importance = pd.Series(mi_scores.scores_, index=self.feature_names) # type: ignore
         
         # Combine and rank features
         importance_df = pd.DataFrame({

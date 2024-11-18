@@ -75,7 +75,7 @@ class PyTorchLSTMClassifier(BaseEstimator, ClassifierMixin):
         dataset = self._prepare_data(X, y)
         train_loader = self._create_dataloader(dataset)
         
-        self.model.train()
+        self.model.train() # type: ignore
         with Progress() as progress:
             task = progress.add_task("[cyan]Training LSTM...", total=self.epochs)
             
@@ -86,7 +86,7 @@ class PyTorchLSTMClassifier(BaseEstimator, ClassifierMixin):
                 
                 for batch_X, batch_y in train_loader:
                     self.optimizer.zero_grad()
-                    outputs = self.model(batch_X)
+                    outputs = self.model(batch_X) # type: ignore
                     loss = self.criterion(outputs, batch_y)
                     loss.backward()
                     self.optimizer.step()
@@ -101,11 +101,11 @@ class PyTorchLSTMClassifier(BaseEstimator, ClassifierMixin):
         return self
     
     def predict_proba(self, X):
-        self.model.eval()
+        self.model.eval() # type: ignore
         X_tensor = self._prepare_data(X)
         
         with torch.no_grad():
-            probas = self.model(X_tensor).cpu().numpy()
+            probas = self.model(X_tensor).cpu().numpy() # type: ignore
         
         return np.hstack([1 - probas, probas])
     

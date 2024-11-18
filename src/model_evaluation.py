@@ -14,7 +14,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import track, Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
-from src.models.lstm import PyTorchLSTMClassifier
+from src.models.lstm import PyTorchLSTMClassifier # type: ignore
 console = Console()
 
 def get_models(input_shape=None):
