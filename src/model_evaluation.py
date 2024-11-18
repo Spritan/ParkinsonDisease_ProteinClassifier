@@ -1,8 +1,10 @@
+import matplotlib
+matplotlib.use('Agg')  # Set backend before importing pyplot
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -38,7 +40,8 @@ def evaluate_model(model, X, y, n_splits=5):
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        console=console
+        console=console,
+        transient=True
     ) as progress:
         task = progress.add_task("[cyan]Running cross-validation...", total=n_splits)
         
@@ -61,7 +64,10 @@ def evaluate_model(model, X, y, n_splits=5):
 
 def plot_model_comparison(results, metric='accuracy'):
     with console.status(f"[cyan]Generating {metric} comparison plot..."):
-        plt.figure(figsize=(12, 6))
+        # Create new figure for each plot
+        plt.clf()
+        fig = plt.figure(figsize=(12, 6))
+        
         models = list(results.keys())
         means = [results[model][metric][0] for model in models]
         stds = [results[model][metric][1] for model in models]
@@ -77,7 +83,7 @@ def plot_model_comparison(results, metric='accuracy'):
         
         plt.tight_layout()
         plt.savefig(f'plots/model_comparison_{metric}.png')
-        plt.close()
+        plt.close(fig)
         
     console.print(f"[green]✓[/green] Saved comparison plot for {metric}")
 
